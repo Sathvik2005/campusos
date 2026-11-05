@@ -7,6 +7,7 @@ import { SignOutButton } from "@/components/layout/app-shell";
 import { Skeleton } from "@/components/ui/card";
 import { useAuth } from "@/features/auth/auth-provider";
 import { AppShell } from "@/components/layout/app-shell";
+import { SyncProvider } from "@/features/offline/sync-provider";
 
 /** Presentation-level route protection. The API independently enforces authentication and permissions. */
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -19,7 +20,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [state, router]);
 
-  if (state.status === "authenticated") return <AppShell user={state.user}>{children}</AppShell>;
+  if (state.status === "authenticated") {
+    return (
+      <SyncProvider>
+        <AppShell user={state.user}>{children}</AppShell>
+      </SyncProvider>
+    );
+  }
 
   if (state.status === "forbidden") {
     return (

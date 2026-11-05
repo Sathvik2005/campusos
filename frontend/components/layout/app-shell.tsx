@@ -5,6 +5,7 @@ import { LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BackendStatus } from "@/components/feedback/backend-status";
+import { SyncChip } from "@/features/offline/sync-chip";
 import { OfflineBanner } from "@/components/feedback/offline-banner";
 import { Button } from "@/components/ui/button";
 import { navFor, type NavItem } from "@/features/auth/nav";
@@ -131,8 +132,11 @@ export function AppShell({ user, children }: { user: Me; children: React.ReactNo
             <Wordmark />
           </span>
           <p className="hidden truncate text-sm font-semibold lg:block">{current?.label ?? "CampusOS"}</p>
-          <div className="ml-auto hidden md:block">
-            <BackendStatus />
+          <div className="ml-auto flex min-w-0 items-center gap-2">
+            <SyncChip />
+            <span className="hidden md:block">
+              <BackendStatus />
+            </span>
           </div>
         </header>
         <main className={cn("mx-auto w-full max-w-[1200px] flex-1 px-4 py-6 lg:px-8 lg:py-10", bottomNav && "pb-24 lg:pb-10")}>{children}</main>

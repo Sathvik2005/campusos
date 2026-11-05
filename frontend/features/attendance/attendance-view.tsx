@@ -1,35 +1,28 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { EmptyState, ErrorState } from "@/components/feedback/states";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/card";
 import { StatusPill } from "@/components/ui/status-pill";
 import { useAuth } from "@/features/auth/auth-provider";
-import { ApiError, apiFetch } from "@/lib/api/client";
+import { useSync } from "@/features/offline/sync-provider";
+import { NetworkError, apiFetch } from "@/lib/api/client";
+import { cachedFetch } from "@/lib/offline/cache";
+import type { OutboxItem } from "@/lib/offline/db";
+import { buildSyncPayload, enqueue, listOutbox, requeue } from "@/lib/offline/outbox";
 import { cn } from "@/lib/utils/cn";
 import type { Assignment, Batch, Subject } from "@/types/api";
 
 export type Mark = "present" | "absent" | "late";
 interface Roster { batch_id: string; subject_id: string; students: { id: string; roll_number: string; full_name: string }[] }
-interface SyncResult { session_id: string; created: boolean; record_count: number }
 interface SessionRow { id: string; batch_id: string; subject_id: string; held_on: string; period: number }
 
 const selectCls = "min-h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-base lg:min-h-10 lg:text-sm";
 const today = () => new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
 
-/** Payload shape is identical to POST /attendance/sync (Phase 8 sends the same object from the outbox). */
-export function buildSyncPayload(args: { key: string; batchId: string; subjectId: string; heldOn: string; period: number; marks: Record<string, Mark> }) {
-  return {
-    idempotency_key: args.key,
-    batch_id: args.batchId,
-    subject_id: args.subjectId,
-    held_on: args.heldOn,
-    period: args.period,
-    records: Object.entries(args.marks).map(([student_id, status]) => ({ student_id, status })),
-  };
-}
+export { buildSyncPayload };
 
 const LABEL: Record<Mark, string> = { present: "Present", absent: "Absent", late: "Late" };
 const TONE: Record<Mark, string> = {
@@ -53,23 +46,29 @@ export function AttendanceView() {
 }
 
 function TakeAttendance() {
-  const qc = useQueryClient();
-  const assignments = useQuery({ queryKey: ["assignments"], queryFn: ({ signal }) => apiFetch<Assignment[]>("/api/v1/assignments", { signal }) });
-  const batches = useQuery({ queryKey: ["batches"], queryFn: ({ signal }) => apiFetch<Batch[]>("/api/v1/batches", { signal }) });
-  const subjects = useQuery({ queryKey: ["subjects"], queryFn: ({ signal }) => apiFetch<Subject[]>("/api/v1/subjects", { signal }) });
+  const { state } = useAuth();
+  const profileId = state.status === "authenticated" ? state.user.id : "";
+  const { items, syncNow } = useSync();
+  const assignments = useCachedList<Assignment>(profileId, "assignments", "/api/v1/assignments");
+  const batches = useCachedList<Batch>(profileId, "batches", "/api/v1/batches");
+  const subjects = useCachedList<Subject>(profileId, "subjects", "/api/v1/subjects");
   const [pair, setPair] = useState(""); // `${batch_id}|${subject_id}`
   const [heldOn, setHeldOn] = useState(today);
   const [period, setPeriod] = useState(1);
   const [marks, setMarks] = useState<Record<string, Mark>>({});
-  const keyRef = useRef<string | null>(null);
+  const [saved, setSaved] = useState<{ synced: boolean; count: number } | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [batchId, subjectId] = pair.split("|");
 
   const roster = useQuery({
-    queryKey: ["roster", batchId, subjectId],
-    enabled: !!pair,
-    queryFn: ({ signal }) => apiFetch<Roster>(`/api/v1/attendance/roster?batch_id=${batchId}&subject_id=${subjectId}`, { signal }),
+    queryKey: ["roster", profileId, batchId, subjectId],
+    enabled: !!pair && !!profileId,
+    retry: false,
+    queryFn: ({ signal }) =>
+      cachedFetch(profileId, `roster:${batchId}:${subjectId}`, () => apiFetch<Roster>(`/api/v1/attendance/roster?batch_id=${batchId}&subject_id=${subjectId}`, { signal })),
   });
-  const students = roster.data?.students ?? [];
+  const students = roster.data?.data.students ?? [];
   const unmarked = students.filter((s) => !marks[s.id]).length;
   const counts = useMemo(() => {
     const c = { present: 0, absent: 0, late: 0 };
@@ -77,41 +76,59 @@ function TakeAttendance() {
     return c;
   }, [marks]);
 
-  const save = useMutation({
-    mutationFn: () => {
-      keyRef.current ??= crypto.randomUUID(); // reused on retry => replay is a no-op, never a duplicate
-      return apiFetch<SyncResult>("/api/v1/attendance/sessions", {
-        method: "POST",
-        body: buildSyncPayload({ key: keyRef.current, batchId, subjectId, heldOn, period, marks }),
-      });
-    },
-    onSuccess: () => {
-      keyRef.current = null;
-      setMarks({});
-      qc.invalidateQueries({ queryKey: ["attendance-sessions"] });
-    },
-  });
+  const label = () => {
+    const b = batches.data?.data.find((x) => x.id === batchId);
+    return `${subjects.data?.data.find((x) => x.id === subjectId)?.name ?? "Subject"} · Year ${b?.year_of_study ?? "?"} ${b?.section ?? ""} · ${heldOn} P${period}`;
+  };
 
-  const pairs = (assignments.data ?? []).map((a) => {
-    const b = batches.data?.find((x) => x.id === a.batch_id);
-    const s = subjects.data?.find((x) => x.id === a.subject_id);
+  /** IndexedDB first, then try the network. A failed or offline sync never loses the marks. */
+  const save = async () => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const payload = buildSyncPayload({ key: crypto.randomUUID(), batchId, subjectId, heldOn, period, marks });
+      await enqueue(profileId, payload, label());
+      setMarks({});
+      setSaved({ synced: false, count: payload.records.length });
+      await syncNow(true);
+      const now = (await listOutbox(profileId)).find((i) => i.id === payload.idempotency_key);
+      setSaved({ synced: now?.status === "synced", count: payload.records.length });
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "Could not save on this device.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const pairs = (assignments.data?.data ?? []).map((a) => {
+    const b = batches.data?.data.find((x) => x.id === a.batch_id);
+    const s = subjects.data?.data.find((x) => x.id === a.subject_id);
     return { value: `${a.batch_id}|${a.subject_id}`, label: `${s?.name ?? "Subject"} · Year ${b?.year_of_study ?? "?"} ${b?.section ?? ""}` };
   });
 
   if (assignments.isPending || batches.isPending || subjects.isPending) return <Skeleton className="h-40" />;
   const failed = [assignments, batches, subjects].find((q) => q.isError);
-  if (failed) return <ErrorState title="Couldn't load your classes" message={failed.error!.message} onRetry={() => failed.refetch()} />;
+  if (failed) {
+    const offline = failed.error instanceof NetworkError;
+    return (
+      <>
+        <ErrorState
+          title={offline ? "You're offline and your classes aren't saved on this device yet" : "Couldn't load your classes"}
+          message={offline ? "Open Attendance once while online so your classes and rosters are saved for offline use." : failed.error!.message}
+          onRetry={() => failed.refetch()}
+        />
+        <LocalSessions items={items} onRetry={() => syncNow(true)} />
+      </>
+    );
+  }
   if (!pairs.length) return <EmptyState title="No classes assigned yet" body="Ask the office admin to assign you a subject and class." />;
-
-  const err = save.error;
-  const errMsg = err instanceof ApiError && err.status === 409 ? `${err.message} Change nothing and ask the office if this class was already recorded.` : err?.message;
 
   return (
     <div className="space-y-5 pb-28">
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="block text-sm font-medium sm:col-span-1">
           Class and subject
-          <select value={pair} onChange={(e) => { setPair(e.target.value); setMarks({}); keyRef.current = null; save.reset(); }} className={`${selectCls} mt-1.5 font-normal`}>
+          <select value={pair} onChange={(e) => { setPair(e.target.value); setMarks({}); setSaved(null); }} className={`${selectCls} mt-1.5 font-normal`}>
             <option value="">Select…</option>
             {pairs.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
           </select>
@@ -128,13 +145,24 @@ function TakeAttendance() {
         </label>
       </div>
 
-      {save.isSuccess && (
+      {saved && (
         <p role="status" className="rounded-[var(--radius-control)] bg-positive-bg px-4 py-3 text-sm font-medium text-positive-fg">
-          {save.data.created ? `Saved ${save.data.record_count} records.` : "Already saved. Nothing changed."} All caught up. Nice work.
+          {saved.synced ? `Saved and synced ${saved.count} records. All caught up. Nice work.` : `Saved ${saved.count} records on this device. They will sync when you are back online.`}
+        </p>
+      )}
+      {roster.data?.fromCache && (
+        <p role="note" className="rounded-[var(--radius-control)] bg-warning-bg px-4 py-2 text-sm text-warning-fg">
+          Using the roster saved on this device{roster.data.cachedAt ? ` (${new Date(roster.data.cachedAt).toLocaleString("en-IN")})` : ""}. The server will re-check everything when this syncs.
         </p>
       )}
       {pair && roster.isPending && <div role="status" aria-label="Loading roster" className="space-y-2">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-16" />)}</div>}
-      {roster.isError && <ErrorState title="Couldn't load the roster" message={roster.error.message} onRetry={() => roster.refetch()} />}
+      {roster.isError && (
+        <ErrorState
+          title={roster.error instanceof NetworkError ? "You're offline and this roster isn't saved on this device" : "Couldn't load the roster"}
+          message={roster.error instanceof NetworkError ? "Open this class once while online to save its roster for offline marking." : roster.error.message}
+          onRetry={() => roster.refetch()}
+        />
+      )}
       {roster.data && students.length === 0 && <EmptyState title="No students in this class" body="Nothing to mark yet." />}
 
       {students.length > 0 && (
@@ -156,7 +184,7 @@ function TakeAttendance() {
                       key={m}
                       type="button"
                       aria-pressed={marks[s.id] === m}
-                      onClick={() => setMarks((x) => ({ ...x, [s.id]: m }))}
+                      onClick={() => { setSaved(null); setMarks((x) => ({ ...x, [s.id]: m })); }}
                       className={cn("min-h-12 rounded-[var(--radius-control)] border text-sm font-semibold", marks[s.id] === m ? TONE[m] : "border-line bg-surface text-ink hover:bg-canvas")}
                     >
                       {LABEL[m]}
@@ -172,15 +200,61 @@ function TakeAttendance() {
                 P {counts.present} · A {counts.absent} · L {counts.late}
                 {unmarked > 0 && ` · ${unmarked} left`}
               </p>
-              <Button loading={save.isPending} disabled={unmarked > 0} onClick={() => save.mutate()} className="min-w-32">
+              <Button loading={saving} disabled={unmarked > 0} onClick={save} className="min-w-32">
                 Save attendance
               </Button>
             </div>
-            {errMsg && <p role="alert" className="mx-auto mt-2 max-w-3xl text-sm text-danger-fg">{errMsg}</p>}
+            {saveError && <p role="alert" className="mx-auto mt-2 max-w-3xl text-sm text-danger-fg">{saveError}</p>}
           </div>
         </>
       )}
+      <LocalSessions items={items} onRetry={() => syncNow(true)} />
     </div>
+  );
+}
+
+function useCachedList<T>(profileId: string, key: string, path: string) {
+  return useQuery({
+    queryKey: [key, profileId],
+    enabled: !!profileId,
+    retry: false,
+    queryFn: ({ signal }) => cachedFetch(profileId, key, () => apiFetch<T[]>(path, { signal })),
+  });
+}
+
+const STATUS_COPY: Record<OutboxItem["status"], { tone: "neutral" | "warning" | "positive" | "danger"; text: string }> = {
+  pending: { tone: "warning", text: "Waiting to sync" },
+  syncing: { tone: "warning", text: "Syncing" },
+  synced: { tone: "positive", text: "Synced" },
+  failed: { tone: "danger", text: "Failed" },
+  conflict: { tone: "danger", text: "Needs review" },
+};
+
+/** What is stored on this device, with the truth about each record. Nothing here is ever auto-deleted. */
+export function LocalSessions({ items, onRetry }: { items: OutboxItem[]; onRetry: () => void }) {
+  const shown = [...items].reverse().slice(0, 10);
+  if (!shown.length) return null;
+  return (
+    <section aria-label="Saved on this device" className="space-y-2">
+      <h2 className="text-lg font-bold">Saved on this device</h2>
+      <ul className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
+        {shown.map((i) => (
+          <li key={i.id} className="space-y-1 px-4 py-3 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0 truncate font-medium">{i.label}</span>
+              <StatusPill tone={STATUS_COPY[i.status].tone}>{STATUS_COPY[i.status].text}</StatusPill>
+            </div>
+            <p className="tabular text-xs text-muted">{i.payload.records.length} students</p>
+            {i.status === "conflict" && <p className="text-xs text-danger-fg">The server already has a different record for this class and period. Your marks are kept here; ask the office to review. {i.lastError}</p>}
+            {i.status === "failed" && <p className="text-xs text-danger-fg">{i.lastError}{i.retryable ? "" : " This cannot be retried automatically; your marks are kept here."}</p>}
+            {i.status === "pending" && i.lastError && <p className="text-xs text-muted">{i.lastError}</p>}
+            {i.status === "failed" && i.retryable && (
+              <Button variant="secondary" onClick={async () => { await requeue(i.id); onRetry(); }}>Retry now</Button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
