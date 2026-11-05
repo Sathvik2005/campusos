@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+/* CampusOS design tokens — source: docs/DESIGN_SYSTEM.md */
+:root {
+  --bg-canvas: #f5f3ef;
+  --bg-surface: #ffffff;
+  --bg-sidebar: #111827;
+  --bg-sidebar-hover: #1f2937;
+  --text-primary: #111827;
+  --text-muted: #6b7280;
+  --text-on-dark: #f9fafb;
+  --border-subtle: #e7e5e4;
+  --accent: #c4b5fd;
+  --accent-strong: #6d28d9;
+  --positive-bg: #d1fae5;
+  --positive-fg: #065f46;
+  --warning-bg: #fef3c7;
+  --warning-fg: #92400e;
+  --danger-bg: #fee2e2;
+  --danger-fg: #991b1b;
+}
+
+@theme inline {
+  --color-canvas: var(--bg-canvas);
+  --color-surface: var(--bg-surface);
+  --color-sidebar: var(--bg-sidebar);
+  --color-sidebar-hover: var(--bg-sidebar-hover);
+  --color-ink: var(--text-primary);
+  --color-muted: var(--text-muted);
+  --color-on-dark: var(--text-on-dark);
+  --color-line: var(--border-subtle);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-positive-bg: var(--positive-bg);
+  --color-positive-fg: var(--positive-fg);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-fg: var(--warning-fg);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-fg: var(--danger-fg);
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-heading: var(--font-manrope), system-ui, sans-serif;
+  --radius-control: 10px;
+  --radius-card: 12px;
+  --radius-sheet: 14px;
+}
+
+html {
+  background: var(--bg-canvas);
+}
+
+body {
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.01em;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
