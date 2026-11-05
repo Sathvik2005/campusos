@@ -1,0 +1,27 @@
+sequenceDiagram
+  actor F as Faculty
+  participant UI as Attendance UI
+  participant IDB as Dexie
+  participant Q as Sync engine
+  participant API as FastAPI
+  participant DB as PostgreSQL
+  F->>UI: Mark roster and save
+  UI->>IDB: Write session + records + outbox
+  UI-->>F: Pending (survives refresh)
+  Q->>API: POST /api/v1/attendance/sync
+  API->>API: Verify JWT and assignment
+  alt same idempotency key
+    API->>DB: Find existing session
+    API-->>Q: 200 existing
+    Q->>IDB: Mark synced
+  else natural key taken different payload
+    API-->>Q: 409 conflict
+    Q->>IDB: Keep local, status conflict
+  else ok
+    API->>DB: Insert session+records txn
+    API-->>Q: 201 created
+    Q->>IDB: Mark synced
+  else 5xx
+    API-->>Q: error
+    Q->>IDB: Keep local, status failed
+  end

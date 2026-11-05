@@ -1,0 +1,24 @@
+erDiagram
+  CAMPUSES ||--o{ PROGRAMMES : has
+  PROGRAMMES ||--o{ BATCHES : has
+  PROGRAMMES ||--o{ SUBJECTS : has
+  ACADEMIC_YEARS ||--o{ BATCHES : spans
+  BATCHES ||--o{ STUDENTS : enrols
+  FACULTY ||--o{ ASSIGNMENTS : teaches
+  SUBJECTS ||--o{ ASSIGNMENTS : of
+  BATCHES ||--o{ ASSIGNMENTS : for
+  PROFILES }o--|| CAMPUSES : campus
+  PROFILES }o--o| FACULTY : maps
+  ASSIGNMENTS ||--o{ ATTENDANCE_SESSIONS : allows
+  ATTENDANCE_SESSIONS ||--o{ ATTENDANCE_RECORDS : contains
+  STUDENTS ||--o{ ATTENDANCE_RECORDS : marked
+  SUBJECTS ||--o{ ASSESSMENT_COMPONENTS : assessed
+  ASSESSMENT_COMPONENTS ||--o{ MARKS : scores
+  STUDENTS ||--o{ MARKS : earns
+  PROGRAMMES ||--o{ FEE_PLANS : priced
+  STUDENTS ||--|| FEE_ACCOUNTS : holds
+  FEE_ACCOUNTS ||--o{ FEE_PAYMENTS : pays
+  FEE_PAYMENTS ||--|| RECEIPTS : issues
+  STUDENTS ||--o{ RISK_ASSESSMENTS : flagged
+  STUDENTS ||--o{ MENTOR_TASKS : followup
+  PROFILES ||--o{ AUDIT_EVENTS : acts

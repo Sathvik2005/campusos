@@ -1,0 +1,24 @@
+flowchart LR
+  subgraph client [Browser]
+    UI[Next.js App Router]
+    Dexie[Dexie IndexedDB]
+    AuthC[Supabase Auth client]
+  end
+  subgraph api [Render]
+    FA[FastAPI]
+    Rules[Risk rules]
+    AI[Explanation adapter]
+  end
+  subgraph data [Supabase]
+    JWT[Auth JWKS]
+    PG[(PostgreSQL)]
+  end
+  UI --> AuthC
+  AuthC --> JWT
+  UI -->|Bearer JSON| FA
+  UI --> Dexie
+  Dexie -->|sync POST| FA
+  FA --> JWT
+  FA --> PG
+  FA --> Rules
+  Rules --> AI
