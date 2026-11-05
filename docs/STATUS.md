@@ -15,7 +15,7 @@ Last updated: 2026-11-02. Only items verified by a command that was actually run
 | 8 | Offline attendance | **Done in code**; real-browser Playwright journey not run (no credentials) | Vitest 86; `docs/stage-8/` |
 | 9 | AI insights | **Done** (rules + guarded adapter); no live model call (no key) | pytest 68, Vitest 89; `docs/stage-9/` |
 | 10 | QA / security | **Done locally**; real-login/Postgres/Lighthouse not run | pytest 151, Vitest 89, e2e 12; `docs/stage-10/` |
-| 11 | Deployment | Not started (owner credentials required) | |
+| 11 | Deployment | **Prepared, not deployed** (needs owner credentials/approvals) | `docs/stage-11/`, `render.yaml` |
 | 12 | Submission | Not started | |
 
 ## Phase 4 verification (2026-11-02)
