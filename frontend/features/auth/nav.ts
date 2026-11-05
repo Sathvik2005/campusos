@@ -13,13 +13,13 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, roles: ["faculty", "office_admin"], built: true },
-  { href: "/students", label: "Students", icon: GraduationCap, roles: ["faculty", "office_admin"], built: false },
-  { href: "/academic", label: "Academics", icon: Settings2, roles: ["office_admin"], built: false },
-  { href: "/attendance", label: "Attendance", icon: CalendarCheck, roles: ["faculty", "office_admin"], built: false },
-  { href: "/marks", label: "Marks", icon: ClipboardList, roles: ["faculty", "office_admin"], built: false },
-  { href: "/fees", label: "Fees", icon: Landmark, roles: ["office_admin"], built: false },
-  { href: "/insights", label: "Student Insights", icon: Sparkles, roles: ["office_admin"], built: false },
-  { href: "/audit", label: "Audit", icon: ScrollText, roles: ["office_admin"], built: false },
+  { href: "/students", label: "Students", icon: GraduationCap, roles: ["faculty", "office_admin"], built: true },
+  { href: "/academic", label: "Academics", icon: Settings2, roles: ["office_admin"], built: true },
+  { href: "/attendance", label: "Attendance", icon: CalendarCheck, roles: ["faculty", "office_admin"], built: true },
+  { href: "/marks", label: "Marks", icon: ClipboardList, roles: ["faculty", "office_admin"], built: true },
+  { href: "/fees", label: "Fees", icon: Landmark, roles: ["office_admin"], built: true },
+  { href: "/insights", label: "Student Insights", icon: Sparkles, roles: ["office_admin"], built: true },
+  { href: "/audit", label: "Audit", icon: ScrollText, roles: ["office_admin"], built: true },
 ];
 
 /** Navigation for a role. Presentation only: the API enforces permissions regardless. */

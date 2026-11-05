@@ -30,7 +30,7 @@ Read before coding:
 
 ## Current status
 
-Docs for phases 0–12 exist. Phases 4 (foundation) and 5 (backend, verified on SQLite only) are done; Phase 6 (frontend) is next. The owner asked to continue through Phase 6, then the rest, and to be pinged when Phase 6 and when everything is done. Live progress: `docs/STATUS.md` (update it every milestone). Prompt digest and prompt-vs-docs decisions: `docs/prompts/PROMPT_NOTES.md`.
+Docs for phases 0–12 exist. Phases 4-6 are done (backend verified on SQLite only; authenticated browser flows await Supabase credentials); Phase 7 (core modules) is in progress. The owner asked to continue through Phase 6, then the rest, and to be pinged when Phase 6 and when everything is done. Live progress: `docs/STATUS.md` (update it every milestone). Prompt digest and prompt-vs-docs decisions: `docs/prompts/PROMPT_NOTES.md`.
 
 When implementation starts, follow `docs/phase-0/PHASED_IMPLEMENTATION_PLAN.md`. Never generate the entire app in one pass.
 
@@ -38,7 +38,7 @@ When implementation starts, follow `docs/phase-0/PHASED_IMPLEMENTATION_PLAN.md`.
 
 ## Repo state and docs map
 
-- Code: `backend/` (FastAPI, Python 3.11 venv at `backend/.venv`) and `frontend/` (Next.js 16, see `frontend/AGENTS.md`). Local git repo in this folder only; its parent repo's origin is unrelated, so never add that remote or push without the owner's approval.
+- Code: `backend/` (FastAPI, Python 3.11 venv at `backend/.venv`) and `frontend/` (Next.js 16, see `frontend/AGENTS.md`). Git remote `origin` = https://github.com/Sathvik2005/campusos (public, owner-approved). Commit and push once per finished phase (Co-Authored-By trailer); never force-push.
 
 **Commands** (verified): backend `cd backend; .venv\Scripts\python -m pytest -q`, run `.venv\Scripts\python -m uvicorn app.main:app --reload`; frontend `cd frontend; npm test` (Vitest), `npm run typecheck`, `npm run lint`, `npm run build`, `npm run dev`, `npm run test:e2e` (Playwright via system Edge; starts both servers). Single test: `pytest tests/test_health.py::test_health_ok`, `npx vitest run lib/api/client.test.ts`.
 - **Source of truth is `docs/phase-0/` → `phase-1/` → `phase-2/` → `phase-3/`.** Phase numbers follow `docs/phase-0/PHASED_IMPLEMENTATION_PLAN.md` (0 context, 1 product, 2 architecture, 3 UI/UX, 4 dev env, 5 backend, 6 frontend, 7 core modules, 8 offline, 9 AI, 10 testing/security, 11 deployment, 12 submission).
@@ -54,7 +54,7 @@ Browser (Next.js App Router · TypeScript · Tailwind · shadcn/ui · TanStack Q
 - FastAPI is the **only writer**. The browser never talks to Postgres and never holds a service-role key. No Next.js Server Actions as system of record. API prefix `/api/v1`.
 - Modular monolith. No microservices, queues, or Supabase JS mutations.
 - Never `supabase db reset`, drop/truncate, rewrite applied Alembic revisions, or run seed scripts against a remote/production DB. Migrations are linear and need explicit owner approval before applying remotely.
-- Git commits are currently blocked (global `commit.gpgsign=true`, missing GPG key). Leave work staged and ask the owner; never bypass signing.
+- Commit signing: the global GPG key is missing, so this repo has local `commit.gpgsign=false` (owner-approved). Do not change global git config.
 - Never create, overwrite or print `.env` / `.env.local`; owner supplies credentials.
 
 ---

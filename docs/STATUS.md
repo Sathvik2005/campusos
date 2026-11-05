@@ -11,7 +11,7 @@ Last updated: 2026-11-02. Only items verified by a command that was actually run
 | 4 | Dev environment | **Done** (no remote repo/DB yet) | `docs/phase-4/SETUP_GUIDE.md` §5 |
 | 5 | Backend | **Done** on SQLite; Postgres/Supabase/AI provider not tested | 60 pytest passed; `docs/phase-5/` (4 docs) |
 | 6 | Frontend foundation | **Done** except authenticated browser flows (need Supabase credentials) | Vitest 21 passed, lint/typecheck clean, build OK, Playwright 11 passed (2026-11-03). `docs/phase-6/FRONTEND_PLAN.md` |
-| 7 | Core modules | In progress | see below |
+| 7 | Core modules | **Done** (online paths; no real-login browser run) | Vitest 49, pytest 61, build OK; `docs/stage-7/` |
 | 8 | Offline attendance | Not started | |
 | 9 | AI insights | Not started | |
 | 10 | QA / security | Not started | |

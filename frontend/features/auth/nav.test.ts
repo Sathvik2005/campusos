@@ -13,6 +13,6 @@ describe("navFor", () => {
   });
 
   it("renders only modules that exist", () => {
-    expect(navFor("office_admin").map((i) => i.label)).toEqual(["Overview"]);
+    expect(navFor("office_admin").map((i) => i.label)).toEqual(["Overview", "Students", "Academics", "Attendance", "Marks", "Fees", "Student Insights", "Audit"]);
   });
 });

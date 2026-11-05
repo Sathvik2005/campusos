@@ -119,3 +119,12 @@ def test_admin_correction_requires_reason_and_is_audited(client, world, db):
     db.expire_all()
     ev = db.scalar(select(AuditEvent).where(AuditEvent.action == "attendance.corrected"))
     assert ev.reason == "Marked in error" and ev.new_value[target] == "absent" and ev.old_value[target] == "present"
+
+
+def test_session_detail_is_scoped(client, world):
+    h = auth(world["f_ids"][0])
+    sid = client.post(f"{API}/attendance/sync", headers=h, json=payload(world)).json()["session_id"]
+    ok = client.get(f"{API}/attendance/sessions/{sid}", headers=h)
+    assert ok.status_code == 200 and len(ok.json()["records"]) >= 1
+    assert client.get(f"{API}/attendance/sessions/{sid}", headers=auth(world["admin_id"])).status_code == 200
+    assert client.get(f"{API}/attendance/sessions/{sid}", headers=auth(world["f_ids"][1])).status_code == 404

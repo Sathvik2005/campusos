@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -35,6 +35,17 @@ def list_sessions(batch_id: uuid.UUID | None = None, subject_id: uuid.UUID | Non
     if held_on:
         q = q.where(AttendanceSession.held_on == held_on)
     return db.scalars(q.order_by(AttendanceSession.held_on.desc(), AttendanceSession.period).limit(200)).all()
+
+
+@router.get("/sessions/{session_id}", response_model=s.SessionDetail)
+def get_session(session_id: uuid.UUID, db: Session = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
+    sess = db.get(AttendanceSession, session_id)
+    batch = db.get(Batch, sess.batch_id) if sess else None
+    out_of_scope = (sess is None or batch is None or batch.campus_id != user.campus_id
+                    or (user.role == "faculty" and sess.faculty_id != user.faculty_id))
+    if out_of_scope:
+        raise HTTPException(404, "Session not found")   # same answer for out-of-scope ids (no IDOR signal)
+    return sess
 
 
 def _do_sync(body: s.SyncIn, response: Response, db: Session, user: CurrentUser) -> s.SyncOut:

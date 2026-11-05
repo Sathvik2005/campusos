@@ -202,6 +202,15 @@ class SessionOut(Out):
     period: int
 
 
+class SessionRecordOut(Out):
+    student_id: uuid.UUID
+    status: str
+
+
+class SessionDetail(SessionOut):
+    records: list[SessionRecordOut]
+
+
 class CorrectionIn(In):
     reason: str = Field(min_length=1, max_length=500)
     records: list[AttendanceMark] = Field(min_length=1, max_length=500)
