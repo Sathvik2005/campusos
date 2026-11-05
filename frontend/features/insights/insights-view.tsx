@@ -15,12 +15,20 @@ export interface AtRisk {
   indicators: Indicator[]; attendance_pct: string | null; internals_score: string | null; internals_max: string | null; rule_version: string;
 }
 interface Assessment extends Omit<AtRisk, "roll_number" | "full_name"> {
+  id?: string | null;
   explanation: string | null; explanation_status: string; explanation_note: string; persisted: boolean; created_at: string | null;
 }
 interface Task { id: string; student_id: string; title: string; notes: string | null; status: string; due_on: string | null }
 
-const CAT_TONE: Record<string, "danger" | "warning" | "positive" | "neutral"> = { high: "danger", moderate: "warning", low: "positive", insufficient_data: "neutral" };
-export const catLabel = (c: string) => (c === "insufficient_data" ? "Insufficient data" : c[0].toUpperCase() + c.slice(1));
+/** Backend categories: on_track | watch | at_risk; confidence: sufficient | limited | insufficient. */
+export function riskLabel(category: string, confidence: string): string {
+  if (confidence === "insufficient") return "Insufficient data";
+  return ({ at_risk: "High", watch: "Moderate", on_track: "Low" } as Record<string, string>)[category] ?? category;
+}
+export function riskTone(category: string, confidence: string): "danger" | "warning" | "positive" | "neutral" {
+  if (confidence === "insufficient") return "neutral";
+  return ({ at_risk: "danger", watch: "warning", on_track: "positive" } as Record<string, "danger" | "warning" | "positive">)[category] ?? "neutral";
+}
 
 export function InsightsView() {
   const q = useQuery({ queryKey: ["at-risk"], queryFn: ({ signal }) => apiFetch<AtRisk[]>("/api/v1/insights/at-risk", { signal }) });
@@ -45,7 +53,7 @@ export function InsightsView() {
                     <span className="block truncate font-semibold">{r.full_name}</span>
                     <span className="tabular block text-xs text-muted">{r.roll_number} · {r.attendance_pct != null ? `${r.attendance_pct}% attendance` : "no attendance yet"}</span>
                   </span>
-                  <StatusPill tone={CAT_TONE[r.category] ?? "neutral"}>{catLabel(r.category)}</StatusPill>
+                  <StatusPill tone={riskTone(r.category, r.confidence)}>{riskLabel(r.category, r.confidence)} risk</StatusPill>
                 </button>
               </li>
             ))}
@@ -66,7 +74,14 @@ function StudentPanel({ row }: { row: AtRisk }) {
   });
   const rerun = useMutation({
     mutationFn: () => apiFetch<Assessment>(`/api/v1/insights/students/${row.student_id}/assess`, { method: "POST" }),
-    onSuccess: (d) => qc.setQueryData(["insight", row.student_id], d),
+    onSuccess: (d) => {
+      qc.setQueryData(["insight", row.student_id], d);
+      void qc.invalidateQueries({ queryKey: ["insight-history", row.student_id] });
+    },
+  });
+  const history = useQuery({
+    queryKey: ["insight-history", row.student_id],
+    queryFn: ({ signal }) => apiFetch<Assessment[]>(`/api/v1/insights/students/${row.student_id}/history`, { signal }),
   });
   const data = rerun.data ?? a.data;
   const [creating, setCreating] = useState(false);
@@ -78,7 +93,7 @@ function StudentPanel({ row }: { row: AtRisk }) {
           <h2 className="text-xl font-bold">{row.full_name}</h2>
           <p className="tabular text-xs text-muted">{row.roll_number}</p>
         </div>
-        <StatusPill tone={CAT_TONE[(data ?? row).category] ?? "neutral"}>{catLabel((data ?? row).category)}</StatusPill>
+        <StatusPill tone={riskTone((data ?? row).category, (data ?? row).confidence)}>{riskLabel((data ?? row).category, (data ?? row).confidence)} risk</StatusPill>
       </div>
       {a.isPending && <Skeleton className="h-24" />}
       {a.isError && <ErrorState title="Couldn't load evidence" message={a.error.message} onRetry={() => a.refetch()} />}
@@ -104,6 +119,18 @@ function StudentPanel({ row }: { row: AtRisk }) {
             )}
           </section>
         </>
+      )}
+      {history.data && history.data.length > 0 && (
+        <section aria-label="Trend">
+          <h3 className="text-sm font-bold">Past calculations</h3>
+          <ul className="tabular mt-1 space-y-1 text-xs text-muted">
+            {history.data.slice(0, 5).map((h, idx) => (
+              <li key={h.id ?? idx}>
+                {h.created_at ? new Date(h.created_at).toLocaleDateString("en-IN") : "—"} · {riskLabel(h.category, h.confidence)} · attendance {h.attendance_pct ?? "n/a"}% · internals {h.internals_score ?? "n/a"}/{h.internals_max ?? "n/a"}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
       {rerun.error && <p role="alert" className="text-sm text-danger-fg">{rerun.error.message}</p>}
       <div className="flex flex-wrap gap-2">

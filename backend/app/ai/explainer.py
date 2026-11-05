@@ -1,7 +1,7 @@
 """Optional AI explanation boundary (docs/phase-9, PD-13). This module has NO database access and
 cannot write anything. It receives rule output only, never names or identifiers, validates the
 model's JSON against a schema, and fails closed: any problem -> status "unavailable", no text.
-No provider is wired yet (owner decision); get_provider() returns None until one is chosen."""
+The Anthropic adapter is used only when AI_PROVIDER_API_KEY is set; otherwise get_provider() returns None."""
 import json
 import logging
 import re
@@ -26,8 +26,48 @@ class ExplanationOut(BaseModel):
     follow_up: str = Field(min_length=1, max_length=350)
 
 
+AI_MODEL = "claude-haiku-5-5"
+_SYSTEM = (
+    "You explain an academic risk assessment that was already decided by fixed rules. "
+    "You do not decide the category, never diagnose, never speculate about personal circumstances, "
+    "and never mention any number that is not in the provided data. "
+    'Reply with JSON only: {"summary": "<=2 sentences explaining the evidence", '
+    '"follow_up": "one neutral, supportive next step for a mentor"}.'
+)
+
+
+class AnthropicProvider:
+    """Calls the Anthropic Messages API with rule output only (no names or identifiers).
+    Any transport, status or shape problem raises ProviderError; explain() then fails closed."""
+
+    def __init__(self, api_key: str, client=None, model: str = AI_MODEL):
+        self._key, self._model, self._client = api_key, model, client
+
+    def generate(self, payload: dict, timeout_s: float) -> str:
+        import httpx
+
+        body = {
+            "model": self._model,
+            "max_tokens": 400,
+            "system": _SYSTEM,
+            "messages": [{"role": "user", "content": json.dumps(payload)}],
+        }
+        headers = {"x-api-key": self._key, "anthropic-version": "2023-06-01", "content-type": "application/json"}
+        try:
+            client = self._client or httpx.Client(timeout=timeout_s)
+            resp = client.post("https://api.anthropic.com/v1/messages", headers=headers, json=body)
+            resp.raise_for_status()
+            return "".join(b.get("text", "") for b in resp.json().get("content", []) if b.get("type") == "text")
+        except (httpx.HTTPError, ValueError, AttributeError) as e:
+            raise ProviderError(type(e).__name__) from e
+
+
 def get_provider() -> ExplanationProvider | None:
-    return None
+    """None when no key is configured: the deterministic result is shown without AI text."""
+    from app.core.config import get_settings
+
+    key = get_settings().ai_provider_api_key
+    return AnthropicProvider(key) if key else None
 
 
 def build_payload(category: str, confidence: str, indicators: list[dict], evidence: dict) -> dict:

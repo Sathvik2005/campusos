@@ -4,10 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/env", () => ({ env: { apiBaseUrl: "http://api.test", supabaseUrl: "", supabaseAnonKey: "" } }));
-import { InsightsView, catLabel } from "./insights-view";
+import { InsightsView, riskLabel, riskTone } from "./insights-view";
 
 const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), { status });
-const row = { student_id: "s1", roll_number: "ENG-24-CSE-0420", full_name: "Demo Student", category: "high", confidence: "high", indicators: [{ code: "ATT_LT_75", text: "Attendance is 62.0%, below the 75% threshold." }], attendance_pct: "62.0", internals_score: "14", internals_max: "40", rule_version: "v1" };
+const row = { student_id: "s1", roll_number: "ENG-24-CSE-0420", full_name: "Demo Student", category: "at_risk", confidence: "sufficient", indicators: [{ code: "ATT_LT_75", text: "Attendance is 62.0%, below the 75% threshold." }], attendance_pct: "62.0", internals_score: "14", internals_max: "40", rule_version: "v1" };
 const assessment = { ...row, explanation: null, explanation_status: "unavailable", explanation_note: "AI explanation unavailable. Showing the rule-based evidence only.", persisted: false, created_at: null };
 
 function setup() {
@@ -16,6 +16,7 @@ function setup() {
     if (init?.method === "POST") { posts.push({ url, body: JSON.parse(String(init.body ?? "null")) }); return json({ id: "t1" }, 201); }
     if (url.includes("/at-risk")) return json([row]);
     if (url.includes("/mentor-tasks")) return json([]);
+    if (url.includes("/history")) return json([{ ...assessment, id: "h1", created_at: "2026-11-01T10:00:00Z" }]);
     return json(assessment);
   }));
   render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><InsightsView /></QueryClientProvider>);
@@ -24,13 +25,22 @@ function setup() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("InsightsView", () => {
-  it("labels categories in plain language", () => expect(catLabel("insufficient_data")).toBe("Insufficient data"));
+  it.each([
+    ["at_risk", "sufficient", "High", "danger"],
+    ["watch", "limited", "Moderate", "warning"],
+    ["on_track", "sufficient", "Low", "positive"],
+    ["on_track", "insufficient", "Insufficient data", "neutral"],
+  ])("maps %s/%s to %s", (c, conf, label, tone) => {
+    expect(riskLabel(c, conf)).toBe(label);
+    expect(riskTone(c, conf)).toBe(tone);
+  });
 
   it("shows rule evidence and a deterministic fallback when AI is unavailable", async () => {
     setup();
     await userEvent.click(await screen.findByRole("button", { name: /Demo Student/ }));
     expect(await screen.findByText(/below the 75% threshold/)).toBeInTheDocument();
     expect(await screen.findByText(/AI explanation unavailable/)).toBeInTheDocument();
+    expect(await screen.findByText(/Past calculations/)).toBeInTheDocument();
   });
 
   it("creates a mentor task only after the admin approves the form", async () => {

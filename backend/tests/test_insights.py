@@ -173,3 +173,63 @@ def test_overview_is_role_shaped(client, world):
     assert adm["active_students"] == 12 and "outstanding_dues" in adm
     fac = client.get(f"{API}/overview", headers=auth(world["f_ids"][0])).json()
     assert fac["role"] == "faculty" and "outstanding_dues" not in fac
+
+
+# ---------- real provider adapter (HTTP mocked; no network, no key)
+def _provider(handler):
+    import httpx
+
+    return explainer.AnthropicProvider("test-key", client=httpx.Client(transport=httpx.MockTransport(handler)))
+
+
+def _payload():
+    r = risk.assess(D("60"), (D("14"), D("40")))
+    return explainer.build_payload(r.category, r.confidence, r.indicators, r.evidence)
+
+
+def test_provider_sends_only_rule_output_and_parses_text():
+    import httpx
+
+    seen = {}
+
+    def handler(req: httpx.Request):
+        seen["body"] = json.loads(req.content)
+        seen["key"] = req.headers["x-api-key"]
+        text = json.dumps({"summary": "Attendance 60 is below 65 and internals 14/40 are low.", "follow_up": "Offer a supportive check-in."})
+        return httpx.Response(200, json={"content": [{"type": "text", "text": text}]})
+
+    status, text, reason = explainer.explain(_payload(), _provider(handler))
+    assert status == "available" and "check-in" in text and reason is None
+    sent = seen["body"]["messages"][0]["content"]
+    assert "name" not in sent.lower() and "roll" not in sent.lower()      # no identifiers leave the system
+    assert seen["key"] == "test-key"
+
+
+@pytest.mark.parametrize("handler_status", [500, 429, 401])
+def test_provider_http_failure_fails_closed(handler_status):
+    import httpx
+
+    status, text, reason = explainer.explain(_payload(), _provider(lambda req: httpx.Response(handler_status, json={})))
+    assert (status, text, reason) == ("unavailable", None, "provider_error")
+
+
+def test_provider_non_json_text_is_discarded():
+    import httpx
+
+    h = lambda req: httpx.Response(200, json={"content": [{"type": "text", "text": "Sure! Here you go."}]})  # noqa: E731
+    assert explainer.explain(_payload(), _provider(h))[0:3:2] == ("unavailable", "invalid_output")
+
+
+def test_provider_invented_numbers_are_rejected():
+    import httpx
+
+    t = json.dumps({"summary": "Attendance 42 is very low.", "follow_up": "Call home."})
+    h = lambda req: httpx.Response(200, json={"content": [{"type": "text", "text": t}]})  # noqa: E731
+    assert explainer.explain(_payload(), _provider(h))[0:3:2] == ("unavailable", "unsupported_claims")
+
+
+def test_no_key_means_no_provider(monkeypatch):
+    from app.core import config
+
+    monkeypatch.setattr(config.get_settings(), "ai_provider_api_key", None, raising=False)
+    assert explainer.get_provider() is None
