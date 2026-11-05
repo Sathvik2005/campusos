@@ -124,7 +124,7 @@ function TakeAttendance() {
   if (!pairs.length) return <EmptyState title="No classes assigned yet" body="Ask the office admin to assign you a subject and class." />;
 
   return (
-    <div className="space-y-5 pb-28">
+    <div className="space-y-5 pb-44 lg:pb-28">
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="block text-sm font-medium sm:col-span-1">
           Class and subject
@@ -194,7 +194,7 @@ function TakeAttendance() {
               </li>
             ))}
           </ul>
-          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 p-3 backdrop-blur lg:left-[var(--sidebar-w,16rem)]">
+          <div className="fixed inset-x-0 bottom-16 z-30 border-t border-line bg-surface/95 p-3 backdrop-blur lg:bottom-0 lg:left-[var(--sidebar-w,16rem)]">
             <div className="mx-auto flex max-w-3xl items-center gap-3">
               <p className="tabular flex-1 text-xs text-muted" aria-live="polite">
                 P {counts.present} · A {counts.absent} · L {counts.late}
@@ -263,12 +263,14 @@ function SessionsList() {
   const batches = useQuery({ queryKey: ["batches"], queryFn: ({ signal }) => apiFetch<Batch[]>("/api/v1/academic/batches", { signal }) });
   const subjects = useQuery({ queryKey: ["subjects"], queryFn: ({ signal }) => apiFetch<Subject[]>("/api/v1/academic/subjects", { signal }) });
   const [open, setOpen] = useState<string | null>(null);
+  const [limit, setLimit] = useState(30);
   if (q.isPending) return <Skeleton className="h-40" />;
   if (q.isError) return <ErrorState title="Couldn't load sessions" message={q.error.message} onRetry={() => q.refetch()} />;
   if (!q.data.length) return <EmptyState title="No sessions recorded yet" body="Sessions appear here once faculty save attendance." />;
   return (
+    <div className="space-y-3">
     <ul aria-label="Sessions" className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
-      {q.data.map((s) => {
+      {q.data.slice(0, limit).map((s) => {
         const b = batches.data?.find((x) => x.id === s.batch_id);
         return (
           <li key={s.id}>
@@ -285,6 +287,9 @@ function SessionsList() {
         );
       })}
     </ul>
+    <p className="tabular text-sm text-muted">Showing {Math.min(limit, q.data.length)} of {q.data.length} recent sessions.</p>
+    {q.data.length > limit && <Button variant="secondary" onClick={() => setLimit((n) => n + 30)}>Show more</Button>}
+    </div>
   );
 }
 

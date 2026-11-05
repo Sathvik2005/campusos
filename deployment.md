@@ -48,6 +48,10 @@ npm run dev                                      # http://localhost:3000
 ```
 Expected without any configuration: the login page loads and says sign-in is not configured; `http://localhost:8000/health` returns `{"status":"ok"}`; `http://localhost:8000/ready` shows `"database":"not_configured"`. That is correct and honest, not an error.
 
+### A2. See every screen without Supabase (local demo mode)
+
+If you only want to look at the real app with real seeded data, `docs/screenshots/README.md` explains **local demo mode**: `backend/tools/local_demo_server.py` runs the real API on SQLite with a locally generated test signing key (it refuses to start unless the database is SQLite and `APP_ENV` is not production), and `tools/capture-screens.cjs` drives a browser through every screen for both roles. All screenshots in the README and the Technical Design Document were produced this way. It is a viewing aid, not a replacement for Supabase sign-in.
+
 ## B. Create the Supabase project
 
 1. supabase.com, New project. Choose a region near your users; save the database password somewhere safe.

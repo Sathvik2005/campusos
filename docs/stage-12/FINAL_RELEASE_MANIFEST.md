@@ -1,16 +1,16 @@
 # Final release manifest (2026-11-05)
 
 - Repository: https://github.com/Sathvik2005/campusos (public)
-- Source commit the documents were built from: `dab33df` (this manifest is added in the next commit)
-- Submission ZIP (outside the repo): `E:\HackAura\CampusOS_Submission.zip`, 211,871 bytes (0.2 MB, limit 25 MB)
-- SHA-256: `291270c20d5a7283e1bda47e7aea6a1b4b67d386e09b4d91fe3fc862c5d829de`
+- Source commit: the commit that adds this line (see `git log`); documents rebuilt after the screenshot review
+- Submission ZIP (outside the repo): `E:\HackAura\CampusOS_Submission.zip`, 3,904,717 bytes (3.7 MB, limit 25 MB)
+- SHA-256: `d193d35a4a6a5c5de3626c2c30676f693adf33f740a27d5eebe3ac30a5d5f2be`
 
 | File in ZIP | Bytes |
 |---|---|
-| `CampusOS_Technical_Design_Document.pdf` | 227,926 |
-| `deployment.md` | 12,598 |
+| `CampusOS_Technical_Design_Document.pdf` | 4,471,372 |
+| `deployment.md` | 13,214 |
 
 Verification: ZIP integrity test passed; extracted to a temporary folder; both files byte-identical to the committed versions; GitHub URL present; secret-pattern scan of `deployment.md` clean; no `.env`, keys, node_modules, virtualenv, build output or database dump included.
 
-Test evidence at this commit: pytest 152 passed, Vitest 89 passed, Playwright 12 passed, typecheck/lint/build clean, npm audit and pip-audit clean.
+Test evidence at this commit: pytest 153 passed, Vitest 129 passed, Playwright 12 passed, plus a real-browser run of every screen and the offline flow in local demo mode, typecheck/lint/build clean, npm audit and pip-audit clean.
 Not part of this release: any deployment, signed-in browser verification, PostgreSQL/Supabase verification, live AI output.

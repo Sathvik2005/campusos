@@ -21,3 +21,6 @@ Covered by automated tests: students (backend CRUD/scope, UI list/search), acade
 2. **PostgreSQL / Supabase.** All backend tests run on SQLite. JWKS verification against real Supabase tokens untested (tests sign their own tokens).
 3. Real AI provider call (no key).
 4. Console-error sweep, Lighthouse, screen-reader pass, responsive checks of the 8 authenticated screens.
+
+## Update: signed-in browser run in local demo mode (2026-11-05)
+The "no authenticated browser session" gap above is partly closed. `backend/tools/local_demo_server.py` runs the real API on SQLite with a locally generated signing key (the API still verifies signature, audience, expiry, profile and role), and `tools/capture-screens.cjs` drives a real Edge browser through **every screen for both roles at 1440 px and 390 px**, plus the offline flow. Results: all screens render with real seeded data; no horizontal overflow after the fixes in B-09/B-10; the offline flow passes in a real browser on desktop and phone (save with API unreachable, reload, record still read from IndexedDB, reconnect, exactly one server session, a second sync adds none; see `docs/screenshots/capture-log.txt`). This run found defects B-07 to B-12. **Still not verified:** Supabase sign-in, PostgreSQL, hosted deployment, true airplane-mode page reload (needs a Service Worker), Lighthouse/axe.

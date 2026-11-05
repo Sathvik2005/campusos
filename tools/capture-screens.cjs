@@ -18,7 +18,7 @@ const { subs, tokens } = JSON.parse(fs.readFileSync(tokensFile, "utf-8"));
 fs.mkdirSync(outDir, { recursive: true });
 const WEB = "http://localhost:3000";
 const API = "http://localhost:8000";
-const SIZES = { desktop: { width: 1440, height: 900 }, mobile: { width: 390, height: 844 } };
+const SIZES = { desktop: { width: 1440, height: 1300 }, mobile: { width: 390, height: 844 } };
 const log = [];
 const note = (m) => { console.log(m); log.push(m); };
 
@@ -48,7 +48,8 @@ async function settle(page, ms = 700) {
 
 async function shot(page, file) {
   await settle(page);
-  await page.screenshot({ path: path.join(outDir, file), fullPage: true });
+  // Viewport shots (1440x1300 desktop, 390x844 phone): fixed navigation and sticky bars appear where a user sees them.
+  await page.screenshot({ path: path.join(outDir, file), fullPage: false });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   note(`shot ${file}${overflow > 0 ? `  !! horizontal overflow ${overflow}px` : ""}`);
 }
@@ -65,9 +66,11 @@ async function go(page, p, heading) {
   const sessions = await api("admin", "/api/v1/attendance/sessions");
   const comp = comps[0];
 
-  for (const size of ["desktop", "mobile"]) {
+  const SIZES_TO_RUN = (process.env.SIZES || "desktop,mobile").split(",");
+  const ROLES_TO_RUN = (process.env.ROLES || "admin,faculty").split(",");
+  for (const size of SIZES_TO_RUN) {
     // ---------------- admin
-    {
+    if (ROLES_TO_RUN.includes("admin")) {
       const { ctx, page } = await newPage(browser, "admin", size);
       const s = (n) => `${n}-${size}.png`;
       try {
@@ -85,7 +88,7 @@ async function go(page, p, heading) {
         await page.getByRole("button", { name: "Save correction" }).click(); await page.getByText("Correction saved and audited.").waitFor();
         await go(page, "/marks", "Internal marks"); await page.getByRole("list", { name: "Assessments" }).waitFor(); await shot(page, s("a07-admin-marks-list"));
         await go(page, `/marks/${comp.id}`, comp.name); await page.getByRole("table").waitFor(); await shot(page, s("a08-admin-marks-detail"));
-        await go(page, "/fees", "Fees"); await page.getByRole("table").waitFor(); await shot(page, s("a09-admin-fees-ledger"));
+        await go(page, "/fees", "Fees"); await page.locator('table:visible, ul[aria-label="Fee accounts"]:visible').first().waitFor(); await shot(page, s("a09-admin-fees-ledger"));
         await go(page, `/fees/${sample.id}`, "Subhashree Mohanty"); await shot(page, s("a10-admin-fee-account"));
         const due = (await api("admin", "/api/v1/fees/accounts?page_size=100")).find((a) => Number(a.outstanding) > 0);
         if (due) { await go(page, `/fees/${due.student_id}`, due.full_name); await page.getByLabel("Amount (INR)").fill("5000"); await shot(page, s("a11-admin-fee-payment-form"));
@@ -100,7 +103,7 @@ async function go(page, p, heading) {
       await ctx.close();
     }
     // ---------------- faculty
-    {
+    if (ROLES_TO_RUN.includes("faculty")) {
       const { ctx, page } = await newPage(browser, "faculty1", size);
       const s = (n) => `${n}-${size}.png`;
       const periodOnline = size === "desktop" ? "8" : "6";

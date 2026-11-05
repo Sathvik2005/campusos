@@ -1,0 +1,60 @@
+shot a01-admin-overview-desktop.png
+shot a02-admin-students-desktop.png
+shot a03-admin-student-detail-desktop.png
+shot a04-admin-academics-desktop.png
+shot a05-admin-attendance-sessions-desktop.png
+shot a06-admin-attendance-correction-desktop.png
+shot a07-admin-marks-list-desktop.png
+shot a08-admin-marks-detail-desktop.png
+shot a09-admin-fees-ledger-desktop.png
+shot a10-admin-fee-account-desktop.png
+shot a11-admin-fee-payment-form-desktop.png
+shot a11b-admin-fee-payment-receipt-desktop.png
+shot a12-admin-insights-evidence-desktop.png
+shot a13-admin-mentor-task-approval-desktop.png
+shot a14-admin-audit-desktop.png
+shot f01-faculty-overview-desktop.png
+shot f02-faculty-students-desktop.png
+shot f03-faculty-marks-list-desktop.png
+shot f04-faculty-marks-entry-desktop.png
+shot f05-faculty-attendance-roster-desktop.png
+shot f06-faculty-attendance-marked-desktop.png
+online save visible in 86 ms
+shot f07-faculty-attendance-synced-desktop.png
+shot f08-faculty-offline-saved-on-device-desktop.png
+IndexedDB outbox before reload: [{"status":"synced","period":8,"n":41},{"status":"pending","period":7,"n":41}]
+IndexedDB outbox after reload (API still unreachable): [{"status":"synced","period":8},{"status":"pending","period":7}]
+shot f09-faculty-offline-after-reload-desktop.png
+shot f10-faculty-reconnected-synced-desktop.png
+server sessions for offline period 7 today: 1 (expect 1)
+after reload + another sync tick, sessions for that period: 1 (expect 1)
+shot a01-admin-overview-mobile.png
+shot a02-admin-students-mobile.png
+shot a03-admin-student-detail-mobile.png
+shot a04-admin-academics-mobile.png
+shot a05-admin-attendance-sessions-mobile.png
+shot a06-admin-attendance-correction-mobile.png
+shot a07-admin-marks-list-mobile.png
+shot a08-admin-marks-detail-mobile.png
+shot a09-admin-fees-ledger-mobile.png
+shot a10-admin-fee-account-mobile.png
+shot a11-admin-fee-payment-form-mobile.png
+shot a11b-admin-fee-payment-receipt-mobile.png
+shot a12-admin-insights-evidence-mobile.png
+shot a13-admin-mentor-task-approval-mobile.png
+shot a14-admin-audit-mobile.png
+shot f01-faculty-overview-mobile.png
+shot f02-faculty-students-mobile.png
+shot f03-faculty-marks-list-mobile.png
+shot f04-faculty-marks-entry-mobile.png
+shot f05-faculty-attendance-roster-mobile.png
+shot f06-faculty-attendance-marked-mobile.png
+online save visible in 68 ms
+shot f07-faculty-attendance-synced-mobile.png
+shot f08-faculty-offline-saved-on-device-mobile.png
+IndexedDB outbox before reload: [{"status":"synced","period":6,"n":41},{"status":"pending","period":5,"n":41}]
+IndexedDB outbox after reload (API still unreachable): [{"status":"synced","period":6},{"status":"syncing","period":5}]
+shot f09-faculty-offline-after-reload-mobile.png
+shot f10-faculty-reconnected-synced-mobile.png
+server sessions for offline period 5 today: 1 (expect 1)
+after reload + another sync tick, sessions for that period: 1 (expect 1)

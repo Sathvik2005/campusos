@@ -52,7 +52,7 @@ export function FeesView() {
       {list.data && rows.length === 0 && <EmptyState mascot={false} title="No accounts found" body="Try a different search." />}
       {rows.length > 0 && (
         <>
-          <section aria-label="Reconciliation (this page)" className="grid grid-cols-3 gap-3">
+          <section aria-label="Reconciliation (this page)" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {[["Billed", sumDecimal(rows.map((r) => r.total))], ["Collected", sumDecimal(rows.map((r) => r.paid))], ["Outstanding", sumDecimal(rows.map((r) => r.outstanding))]].map(([l, v]) => (
               <Card key={l} className="space-y-1 p-4 lg:p-4">
                 <p className="text-xs text-muted">{l} · this page</p>
@@ -60,7 +60,23 @@ export function FeesView() {
               </Card>
             ))}
           </section>
-          <div className="overflow-x-auto rounded-[var(--radius-card)] border border-line bg-surface">
+          <ul aria-label="Fee accounts" className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface md:hidden">
+            {rows.map((r) => (
+              <li key={r.student_id}>
+                <Link href={`/fees/${r.student_id}`} className="block min-h-14 px-4 py-3">
+                  <span className="flex items-start justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className="block font-semibold">{r.full_name}</span>
+                      <span className="tabular block text-xs text-muted">{r.roll_number}</span>
+                    </span>
+                    {Number(r.outstanding) > 0 ? <StatusPill tone="warning">Due {formatInr(r.outstanding)}</StatusPill> : <StatusPill tone="positive">Paid</StatusPill>}
+                  </span>
+                  <span className="tabular mt-1 block text-xs text-muted">Billed {formatInr(r.total)} · Paid {formatInr(r.paid)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto rounded-[var(--radius-card)] border border-line bg-surface md:block">
             <table className="w-full text-sm">
               <caption className="sr-only">Student fee accounts</caption>
               <thead className="bg-canvas text-left text-xs text-muted">
