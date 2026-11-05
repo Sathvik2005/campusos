@@ -52,3 +52,11 @@ for (const width of [1440, 1280, 1024, 768, 390, 360]) {
     }
   });
 }
+
+test("responses carry baseline security headers", async ({ request }) => {
+  const res = await request.get("/login");
+  const h = res.headers();
+  expect(h["x-content-type-options"]).toBe("nosniff");
+  expect(h["x-frame-options"]).toBe("DENY");
+  expect(h["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+});

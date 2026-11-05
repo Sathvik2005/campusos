@@ -14,7 +14,7 @@ Last updated: 2026-11-02. Only items verified by a command that was actually run
 | 7 | Core modules | **Done** (online paths; no real-login browser run) | Vitest 49, pytest 61, build OK; `docs/stage-7/` |
 | 8 | Offline attendance | **Done in code**; real-browser Playwright journey not run (no credentials) | Vitest 86; `docs/stage-8/` |
 | 9 | AI insights | **Done** (rules + guarded adapter); no live model call (no key) | pytest 68, Vitest 89; `docs/stage-9/` |
-| 10 | QA / security | Not started | |
+| 10 | QA / security | **Done locally**; real-login/Postgres/Lighthouse not run | pytest 151, Vitest 89, e2e 12; `docs/stage-10/` |
 | 11 | Deployment | Not started (owner credentials required) | |
 | 12 | Submission | Not started | |
 
