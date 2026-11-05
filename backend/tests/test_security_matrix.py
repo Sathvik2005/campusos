@@ -85,3 +85,20 @@ def test_sql_metacharacters_in_search_are_inert(client, world):
     assert r.status_code == 200 and r.json()["total"] == 0
     r = client.get(f"{API}/students", headers=h, params={"q": "%"})
     assert r.status_code == 200      # LIKE wildcard is treated as data, no error
+
+
+# ---------- seed CLI: linking Supabase users to demo profiles
+def test_seed_parse_user_ids():
+    import uuid as _u
+    from app.seed import parse_user_ids
+
+    a, f1, f2 = _u.uuid4(), _u.uuid4(), _u.uuid4()
+    admin, faculty = parse_user_ids(["--admin-user-id", str(a), "--faculty-user-id", str(f1), "--faculty-user-id", str(f2)])
+    assert admin == a and faculty == [f1, f2]
+    assert parse_user_ids([]) == (None, [])
+    with pytest.raises(ValueError):
+        parse_user_ids(["--admin-user-id", "not-a-uuid"])
+    with pytest.raises(ValueError):
+        parse_user_ids(["--faculty-user-id"])
+    with pytest.raises(ValueError):
+        parse_user_ids(sum((["--faculty-user-id", str(_u.uuid4())] for _ in range(4)), []))

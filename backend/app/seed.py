@@ -127,6 +127,27 @@ def build_demo(db: Session, *, extra_students: int = 40, sessions: int = 200,
             "components": ia, "plan": plan}
 
 
+def parse_user_ids(argv: list[str]) -> tuple[uuid.UUID | None, list[uuid.UUID]]:
+    """--admin-user-id <uuid> (once) and --faculty-user-id <uuid> (up to 3) link Supabase Auth users to demo profiles."""
+    admin: uuid.UUID | None = None
+    faculty: list[uuid.UUID] = []
+    for i, a in enumerate(argv):
+        if a in ("--admin-user-id", "--faculty-user-id"):
+            if i + 1 >= len(argv):
+                raise ValueError(f"{a} needs a UUID")
+            try:
+                value = uuid.UUID(argv[i + 1])
+            except ValueError as e:
+                raise ValueError(f"{a}: {argv[i + 1]!r} is not a UUID") from e
+            if a == "--admin-user-id":
+                admin = value
+            else:
+                faculty.append(value)
+    if len(faculty) > 3:
+        raise ValueError("at most 3 --faculty-user-id values (the demo has 3 faculty)")
+    return admin, faculty
+
+
 def main() -> int:
     from app.core.config import get_settings
     from app.core.db import get_engine
@@ -137,6 +158,11 @@ def main() -> int:
     if "--i-understand-this-writes-demo-data" not in sys.argv:
         print("Dev-only seed. Re-run with --i-understand-this-writes-demo-data against a DEVELOPMENT database.")
         return 2
+    try:
+        admin_id, faculty_ids = parse_user_ids(sys.argv)
+    except ValueError as e:
+        print(f"Invalid arguments: {e}")
+        return 2
     engine = get_engine()
     if engine is None:
         print("DATABASE_URL is not set.")
@@ -145,8 +171,10 @@ def main() -> int:
         if db.scalar(select(func.count()).select_from(Student)):
             print("Refusing to seed: the database already contains students.")
             return 2
-        build_demo(db)
-    print("Seeded demo data (Subhashree Mohanty ENG-24-CSE-0412 included). No auth profiles were created.")
+        build_demo(db, faculty_user_ids=faculty_ids or None, admin_user_id=admin_id)
+        db.commit()
+    linked = (1 if admin_id else 0) + len(faculty_ids)
+    print(f"Seeded demo data (Subhashree Mohanty ENG-24-CSE-0412 included). Linked {linked} auth user(s) to profiles.")
     return 0
 
 
