@@ -28,13 +28,13 @@ export function validateAmount(raw: string, outstanding: number): string | null 
 
 export function FeeAccountView({ studentId }: { studentId: string }) {
   const qc = useQueryClient();
-  const acct = useQuery({ queryKey: ["fee-account", studentId], queryFn: ({ signal }) => apiFetch<Account>(`/api/v1/accounts/${studentId}`, { signal }), retry: false });
+  const acct = useQuery({ queryKey: ["fee-account", studentId], queryFn: ({ signal }) => apiFetch<Account>(`/api/v1/fees/accounts/${studentId}`, { signal }), retry: false });
   const [amount, setAmount] = useState("");
   const keyRef = useRef<string | null>(null);
   const pay = useMutation({
     mutationFn: () => {
       keyRef.current ??= crypto.randomUUID(); // same key on retry => same receipt, never a double charge
-      return apiFetch<Result>("/api/v1/payments", { method: "POST", body: { idempotency_key: keyRef.current, student_id: studentId, amount } });
+      return apiFetch<Result>("/api/v1/fees/payments", { method: "POST", body: { idempotency_key: keyRef.current, student_id: studentId, amount } });
     },
     onSuccess: async () => {
       keyRef.current = null;

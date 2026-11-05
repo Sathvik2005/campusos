@@ -21,8 +21,8 @@ export const LIFECYCLE_TONE = { draft: "neutral", submitted: "warning", moderate
 const selectCls = "min-h-11 w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 text-base lg:min-h-10 lg:text-sm";
 
 function useRefs() {
-  const batches = useQuery({ queryKey: ["batches"], queryFn: ({ signal }) => apiFetch<Batch[]>("/api/v1/batches", { signal }) });
-  const subjects = useQuery({ queryKey: ["subjects"], queryFn: ({ signal }) => apiFetch<Subject[]>("/api/v1/subjects", { signal }) });
+  const batches = useQuery({ queryKey: ["batches"], queryFn: ({ signal }) => apiFetch<Batch[]>("/api/v1/academic/batches", { signal }) });
+  const subjects = useQuery({ queryKey: ["subjects"], queryFn: ({ signal }) => apiFetch<Subject[]>("/api/v1/academic/subjects", { signal }) });
   return { batches: batches.data, subjects: subjects.data };
 }
 
@@ -30,7 +30,7 @@ export function MarksView() {
   const { state } = useAuth();
   const isAdmin = state.status === "authenticated" && state.user.role === "office_admin";
   const { batches, subjects } = useRefs();
-  const list = useQuery({ queryKey: ["components"], queryFn: ({ signal }) => apiFetch<Component[]>("/api/v1/assessments", { signal }) });
+  const list = useQuery({ queryKey: ["components"], queryFn: ({ signal }) => apiFetch<Component[]>("/api/v1/marks/assessments", { signal }) });
   return (
     <div className="space-y-6">
       <header>
@@ -39,7 +39,7 @@ export function MarksView() {
       </header>
       {list.isPending && <Skeleton className="h-40" />}
       {list.isError && <ErrorState title="Couldn't load assessments" message={list.error.message} onRetry={() => list.refetch()} />}
-      {list.data && list.data.length === 0 && <EmptyState title="No assessments yet" body={isAdmin ? "Create the first internal assessment below." : "Assessments appear once the office creates them for your classes."} />}
+      {list.data && list.data.length === 0 && <EmptyState mascot={false} title="No assessments yet" body={isAdmin ? "Create the first internal assessment below." : "Assessments appear once the office creates them for your classes."} />}
       {list.data && list.data.length > 0 && (
         <ul aria-label="Assessments" className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">
           {list.data.map((c) => {
@@ -67,7 +67,7 @@ function CreateComponent({ batches, subjects }: { batches: Batch[]; subjects: Su
   const qc = useQueryClient();
   const [f, setF] = useState({ subject_id: "", batch_id: "", name: "", max_marks: "" });
   const m = useMutation({
-    mutationFn: () => apiFetch("/api/v1/assessments", { method: "POST", body: { ...f, max_marks: f.max_marks } }),
+    mutationFn: () => apiFetch("/api/v1/marks/assessments", { method: "POST", body: { ...f, max_marks: f.max_marks } }),
     onSuccess: () => { setF({ subject_id: "", batch_id: "", name: "", max_marks: "" }); return qc.invalidateQueries({ queryKey: ["components"] }); },
   });
   return (

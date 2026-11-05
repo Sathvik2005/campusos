@@ -49,9 +49,9 @@ function TakeAttendance() {
   const { state } = useAuth();
   const profileId = state.status === "authenticated" ? state.user.id : "";
   const { items, syncNow } = useSync();
-  const assignments = useCachedList<Assignment>(profileId, "assignments", "/api/v1/assignments");
-  const batches = useCachedList<Batch>(profileId, "batches", "/api/v1/batches");
-  const subjects = useCachedList<Subject>(profileId, "subjects", "/api/v1/subjects");
+  const assignments = useCachedList<Assignment>(profileId, "assignments", "/api/v1/academic/assignments");
+  const batches = useCachedList<Batch>(profileId, "batches", "/api/v1/academic/batches");
+  const subjects = useCachedList<Subject>(profileId, "subjects", "/api/v1/academic/subjects");
   const [pair, setPair] = useState(""); // `${batch_id}|${subject_id}`
   const [heldOn, setHeldOn] = useState(today);
   const [period, setPeriod] = useState(1);
@@ -260,8 +260,8 @@ export function LocalSessions({ items, onRetry }: { items: OutboxItem[]; onRetry
 
 function SessionsList() {
   const q = useQuery({ queryKey: ["attendance-sessions"], queryFn: ({ signal }) => apiFetch<SessionRow[]>("/api/v1/attendance/sessions", { signal }) });
-  const batches = useQuery({ queryKey: ["batches"], queryFn: ({ signal }) => apiFetch<Batch[]>("/api/v1/batches", { signal }) });
-  const subjects = useQuery({ queryKey: ["subjects"], queryFn: ({ signal }) => apiFetch<Subject[]>("/api/v1/subjects", { signal }) });
+  const batches = useQuery({ queryKey: ["batches"], queryFn: ({ signal }) => apiFetch<Batch[]>("/api/v1/academic/batches", { signal }) });
+  const subjects = useQuery({ queryKey: ["subjects"], queryFn: ({ signal }) => apiFetch<Subject[]>("/api/v1/academic/subjects", { signal }) });
   const [open, setOpen] = useState<string | null>(null);
   if (q.isPending) return <Skeleton className="h-40" />;
   if (q.isError) return <ErrorState title="Couldn't load sessions" message={q.error.message} onRetry={() => q.refetch()} />;

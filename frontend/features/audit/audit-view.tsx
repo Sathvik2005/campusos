@@ -41,7 +41,7 @@ export function AuditView() {
       </div>
       {q.isPending && <Skeleton className="h-40" />}
       {q.isError && <ErrorState title="Couldn't load audit history" message={q.error.message} onRetry={() => q.refetch()} />}
-      {q.data && q.data.items.length === 0 && <EmptyState title="Nothing recorded yet" body="Actions appear here as people use the system." />}
+      {q.data && q.data.items.length === 0 && <EmptyState mascot={false} title="Nothing recorded yet" body="Actions appear here as people use the system." />}
       {q.data && q.data.items.length > 0 && (
         <>
           <ul aria-label="Audit events" className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface">

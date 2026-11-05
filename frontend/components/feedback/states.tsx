@@ -2,10 +2,11 @@ import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Miso } from "@/components/shared/miso";
 
-export function EmptyState({ title, body, action }: { title: string; body: string; action?: React.ReactNode }) {
+/** Miso is friendly furniture: pass mascot={false} on data surfaces (fees, marks, audit) where the brand rules forbid her. */
+export function EmptyState({ title, body, action, mascot = true }: { title: string; body: string; action?: React.ReactNode; mascot?: boolean }) {
   return (
     <div className="flex flex-col items-center gap-3 py-10 text-center">
-      <Miso size={64} />
+      {mascot && <Miso size={64} />}
       <h3 className="text-lg font-bold">{title}</h3>
       <p className="max-w-sm text-sm text-muted">{body}</p>
       {action}

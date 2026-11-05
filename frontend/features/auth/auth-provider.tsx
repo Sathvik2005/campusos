@@ -23,6 +23,32 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const PROFILE_KEY = "campusos.profile.v1";
+
+/**
+ * The last confirmed profile (id, role, display name only: no token, no PII beyond the name) so the app can reopen
+ * when the API is unreachable. It is presentation only: the API still authorises every request, and a cached
+ * profile is used only if it belongs to the user of the current Supabase session.
+ */
+export function readCachedProfile(sessionUserId: string | null | undefined): Me | null {
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY);
+    if (!raw || !sessionUserId) return null;
+    const me = JSON.parse(raw) as Me;
+    return me && me.id === sessionUserId ? me : null;
+  } catch {
+    return null;
+  }
+}
+function cacheProfile(me: Me | null) {
+  try {
+    if (me) localStorage.setItem(PROFILE_KEY, JSON.stringify(me));
+    else localStorage.removeItem(PROFILE_KEY);
+  } catch {
+    /* storage unavailable: offline reopen simply is not available */
+  }
+}
+
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
@@ -41,15 +67,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadProfile = useCallback(async () => {
     try {
       const user = await apiFetch<Me>("/api/v1/auth/me");
+      cacheProfile(user);
       setState({ status: "authenticated", user });
     } catch (e) {
+      if (e instanceof ApiError && (e.status === 403 || e.status === 401)) cacheProfile(null);
       if (e instanceof ApiError && e.status === 403) {
         setState({ status: "forbidden", message: "Your account is signed in but has no CampusOS access yet. Ask an Office Admin." });
       } else if (e instanceof ApiError && e.status === 401) {
         await supabase?.auth.signOut();
         setState({ status: "anonymous", message: "Your session expired. Please sign in again." });
       } else if (e instanceof NetworkError) {
-        setState({ status: "error", message: "Can't reach the server right now. Your sign-in is kept; try again." });
+        const session = (await supabase?.auth.getSession())?.data.session;
+        const cached = readCachedProfile(session?.user.id);
+        if (cached) setState({ status: "authenticated", user: cached }); // reopen offline; saved work stays reachable
+        else setState({ status: "error", message: "Can't reach the server right now. Your sign-in is kept; try again." });
       } else {
         setState({ status: "error", message: "Something went wrong while loading your profile." });
       }
@@ -95,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    cacheProfile(null);
     await supabase?.auth.signOut();
     queryClient.clear();
     setState({ status: "anonymous" });

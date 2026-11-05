@@ -30,14 +30,14 @@ export function MarksDetailView({ id }: { id: string }) {
   const { state } = useAuth();
   const role = state.status === "authenticated" ? state.user.role : null;
   const qc = useQueryClient();
-  const detail = useQuery({ queryKey: ["component", id], queryFn: ({ signal }) => apiFetch<Detail>(`/api/v1/assessments/${id}`, { signal }) });
+  const detail = useQuery({ queryKey: ["component", id], queryFn: ({ signal }) => apiFetch<Detail>(`/api/v1/marks/assessments/${id}`, { signal }) });
   const c = detail.data;
   const students = useQuery({
     queryKey: ["class-students", c?.batch_id],
     enabled: !!c,
     queryFn: ({ signal }) => apiFetch<Page<StudentRow>>(`/api/v1/students?batch_id=${c!.batch_id}&status=active&page_size=100`, { signal }),
   });
-  const audit = useQuery({ queryKey: ["component-audit", id], queryFn: ({ signal }) => apiFetch<AuditRow[]>(`/api/v1/assessments/${id}/audit`, { signal }) });
+  const audit = useQuery({ queryKey: ["component-audit", id], queryFn: ({ signal }) => apiFetch<AuditRow[]>(`/api/v1/marks/assessments/${id}/audit`, { signal }) });
 
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [reason, setReason] = useState("");
@@ -57,7 +57,7 @@ export function MarksDetailView({ id }: { id: string }) {
   });
   const saveScores = () =>
     act.mutate({
-      path: `/api/v1/assessments/${id}/scores`, method: "PUT",
+      path: `/api/v1/marks/assessments/${id}/scores`, method: "PUT",
       body: { scores: Object.entries(draft).filter(([, v]) => v.trim() !== "").map(([student_id, score]) => ({ student_id, score })), ...(needsReason ? { reason } : {}) },
     });
   const lifecycleAction = (path: string, body?: unknown) => act.mutate({ path, body });
@@ -120,11 +120,11 @@ export function MarksDetailView({ id }: { id: string }) {
 
       <div className="flex flex-wrap gap-2">
         {editable && <Button loading={act.isPending} disabled={hasErrors || Object.keys(draft).length === 0 || (needsReason && !reason.trim())} onClick={saveScores}>Save scores</Button>}
-        {role === "faculty" && c!.lifecycle === "draft" && <Button variant="accent" loading={act.isPending} disabled={Object.keys(draft).length > 0} onClick={() => lifecycleAction(`/api/v1/assessments/${id}/submit`)}>Submit for moderation</Button>}
-        {role === "office_admin" && c!.lifecycle === "submitted" && <Button loading={act.isPending} onClick={() => lifecycleAction(`/api/v1/moderation/${id}/moderate`)}>Mark moderated</Button>}
-        {role === "office_admin" && c!.lifecycle === "moderated" && <Button loading={act.isPending} onClick={() => lifecycleAction(`/api/v1/moderation/${id}/lock`)}>Lock marks</Button>}
+        {role === "faculty" && c!.lifecycle === "draft" && <Button variant="accent" loading={act.isPending} disabled={Object.keys(draft).length > 0} onClick={() => lifecycleAction(`/api/v1/marks/assessments/${id}/submit`)}>Submit for moderation</Button>}
+        {role === "office_admin" && c!.lifecycle === "submitted" && <Button loading={act.isPending} onClick={() => lifecycleAction(`/api/v1/marks/moderation/${id}/moderate`)}>Mark moderated</Button>}
+        {role === "office_admin" && c!.lifecycle === "moderated" && <Button loading={act.isPending} onClick={() => lifecycleAction(`/api/v1/marks/moderation/${id}/lock`)}>Lock marks</Button>}
         {role === "office_admin" && c!.lifecycle !== "draft" && c!.lifecycle !== "submitted" && c!.lifecycle !== "moderated" && (
-          <Button variant="destructive" loading={act.isPending} disabled={!reason.trim()} onClick={() => lifecycleAction(`/api/v1/moderation/${id}/unlock`, { reason })}>Unlock (reason required)</Button>
+          <Button variant="destructive" loading={act.isPending} disabled={!reason.trim()} onClick={() => lifecycleAction(`/api/v1/marks/moderation/${id}/unlock`, { reason })}>Unlock (reason required)</Button>
         )}
       </div>
       {role === "office_admin" && c!.lifecycle === "locked" && (

@@ -20,7 +20,7 @@ export function StudentsView() {
   const [page, setPage] = useState(1);
   const dq = useDeferredValue(q.trim());
 
-  const batches = useQuery({ queryKey: ["batches"], queryFn: ({ signal }) => apiFetch<Batch[]>("/api/v1/batches", { signal }) });
+  const batches = useQuery({ queryKey: ["batches"], queryFn: ({ signal }) => apiFetch<Batch[]>("/api/v1/academic/batches", { signal }) });
   const list = useQuery({
     queryKey: ["students", dq, batchId, page],
     queryFn: ({ signal }) => {

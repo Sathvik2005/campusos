@@ -107,7 +107,7 @@ function YearsSection({ years }: { years: AcademicYear[] }) {
   return (
     <Section title="Academic years">
       <Rows empty="No academic years yet." items={years.map((y) => <Row key={y.id}><b>{y.label}</b> <span className="tabular text-muted">{y.starts_on} → {y.ends_on}</span></Row>)} />
-      <FormShell title="Add academic year" pending={act.isPending} error={msg(act.error)} onSubmit={() => act.mutate({ path: "/api/v1/academic-years", method: "POST", body: f }, { onSuccess: () => setF(blank) })}>
+      <FormShell title="Add academic year" pending={act.isPending} error={msg(act.error)} onSubmit={() => act.mutate({ path: "/api/v1/academic/academic-years", method: "POST", body: f }, { onSuccess: () => setF(blank) })}>
         <Field label="Label" placeholder="2026-27" required value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} />
         <span />
         <Field label="Starts on" type="date" required value={f.starts_on} onChange={(e) => setF({ ...f, starts_on: e.target.value })} />
@@ -124,11 +124,11 @@ function ClassesSection({ batches, programmes, years }: { batches: Batch[]; prog
   return (
     <Section title="Classes" hint="A class is a year of study and section within an academic year.">
       <Rows empty="No classes yet." items={batches.map((b) => (
-        <Row key={b.id} action={<ActiveToggle path={`/api/v1/batches/${b.id}`} active={b.is_active} invalidate={["batches"]} />}>
+        <Row key={b.id} action={<ActiveToggle path={`/api/v1/academic/batches/${b.id}`} active={b.is_active} invalidate={["batches"]} />}>
           <b>Year {b.year_of_study} · Section {b.section}</b> <span className="text-muted">{yl(b.academic_year_id)}</span>
         </Row>
       ))} />
-      <FormShell title="Add class" pending={act.isPending} error={msg(act.error)} onSubmit={() => act.mutate({ path: "/api/v1/batches", method: "POST", body: { ...f, year_of_study: Number(f.year_of_study) } })}>
+      <FormShell title="Add class" pending={act.isPending} error={msg(act.error)} onSubmit={() => act.mutate({ path: "/api/v1/academic/batches", method: "POST", body: { ...f, year_of_study: Number(f.year_of_study) } })}>
         <Select label="Programme" value={f.programme_id} onChange={(v) => setF({ ...f, programme_id: v })} options={programmes.map((p) => ({ value: p.id, label: p.name }))} />
         <Select label="Academic year" value={f.academic_year_id} onChange={(v) => setF({ ...f, academic_year_id: v })} options={years.map((y) => ({ value: y.id, label: y.label }))} />
         <Field label="Year of study" type="number" min={1} max={6} required value={f.year_of_study} onChange={(e) => setF({ ...f, year_of_study: e.target.value })} />
@@ -144,11 +144,11 @@ function SubjectsSection({ subjects, programmes }: { subjects: Subject[]; progra
   return (
     <Section title="Subjects">
       <Rows empty="No subjects yet." items={subjects.map((s) => (
-        <Row key={s.id} action={<ActiveToggle path={`/api/v1/subjects/${s.id}`} active={s.is_active} invalidate={["subjects"]} />}>
+        <Row key={s.id} action={<ActiveToggle path={`/api/v1/academic/subjects/${s.id}`} active={s.is_active} invalidate={["subjects"]} />}>
           <b>{s.name}</b> <span className="tabular text-muted">{s.code} · {s.credits} credits</span>
         </Row>
       ))} />
-      <FormShell title="Add subject" pending={act.isPending} error={msg(act.error)} onSubmit={() => act.mutate({ path: "/api/v1/subjects", method: "POST", body: { ...f, credits: Number(f.credits) } })}>
+      <FormShell title="Add subject" pending={act.isPending} error={msg(act.error)} onSubmit={() => act.mutate({ path: "/api/v1/academic/subjects", method: "POST", body: { ...f, credits: Number(f.credits) } })}>
         <Select label="Programme" value={f.programme_id} onChange={(v) => setF({ ...f, programme_id: v })} options={programmes.map((p) => ({ value: p.id, label: p.name }))} />
         <Field label="Code" required maxLength={20} value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} />
         <Field label="Name" required maxLength={120} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
@@ -165,7 +165,7 @@ function FacultySection({ faculty }: { faculty: Faculty[] }) {
   return (
     <Section title="Faculty">
       <Rows empty="No faculty yet." items={faculty.map((x) => <Row key={x.id}><b>{x.full_name}</b> <span className="text-muted">{x.employee_code} · {x.email}</span></Row>)} />
-      <FormShell title="Add faculty" pending={act.isPending} error={msg(act.error)} onSubmit={() => act.mutate({ path: "/api/v1/faculty", method: "POST", body: f }, { onSuccess: () => setF(blank) })}>
+      <FormShell title="Add faculty" pending={act.isPending} error={msg(act.error)} onSubmit={() => act.mutate({ path: "/api/v1/academic/faculty", method: "POST", body: f }, { onSuccess: () => setF(blank) })}>
         <Field label="Full name" required value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} />
         <Field label="Employee code" required value={f.employee_code} onChange={(e) => setF({ ...f, employee_code: e.target.value })} />
         <Field label="Email" type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
@@ -185,12 +185,12 @@ function AssignmentsSection(p: { assignments: Assignment[]; faculty: Faculty[]; 
   return (
     <Section title="Teaching assignments" hint="Faculty can only take attendance and enter marks for their assigned subject and class.">
       <Rows empty="No assignments yet." items={p.assignments.map((a) => (
-        <Row key={a.id} action={<Button variant="destructive" loading={del.isPending} onClick={() => del.mutate({ path: `/api/v1/assignments/${a.id}`, method: "DELETE" })}>Remove</Button>}>
+        <Row key={a.id} action={<Button variant="destructive" loading={del.isPending} onClick={() => del.mutate({ path: `/api/v1/academic/assignments/${a.id}`, method: "DELETE" })}>Remove</Button>}>
           <b>{name(p.faculty, a.faculty_id, (x) => x.full_name)}</b> <span className="text-muted">{name(p.subjects, a.subject_id, (x) => x.name)} · {name(p.batches, a.batch_id, (x) => `Year ${x.year_of_study} ${x.section}`)}</span>
         </Row>
       ))} />
       {del.error && <p role="alert" className="text-sm text-danger-fg">{msg(del.error)}</p>}
-      <FormShell title="Assign faculty" pending={act.isPending} error={msg(act.error)} onSubmit={() => act.mutate({ path: "/api/v1/assignments", method: "POST", body: f })}>
+      <FormShell title="Assign faculty" pending={act.isPending} error={msg(act.error)} onSubmit={() => act.mutate({ path: "/api/v1/academic/assignments", method: "POST", body: f })}>
         <Select label="Faculty" value={f.faculty_id} onChange={(v) => setF({ ...f, faculty_id: v })} options={p.faculty.map((x) => ({ value: x.id, label: x.full_name }))} />
         <Select label="Subject" value={f.subject_id} onChange={(v) => setF({ ...f, subject_id: v })} options={p.subjects.filter((s) => s.is_active).map((x) => ({ value: x.id, label: x.name }))} />
         <Select label="Class" value={f.batch_id} onChange={(v) => setF({ ...f, batch_id: v })} options={p.batches.filter((b) => b.is_active).map((x) => ({ value: x.id, label: `Year ${x.year_of_study} · ${x.section}` }))} />
@@ -200,12 +200,12 @@ function AssignmentsSection(p: { assignments: Assignment[]; faculty: Faculty[]; 
 }
 
 export function AcademicView() {
-  const programmes = useList<Programme>("programmes", "/api/v1/programmes");
-  const years = useList<AcademicYear>("academic-years", "/api/v1/academic-years");
-  const batches = useList<Batch>("batches", "/api/v1/batches");
-  const subjects = useList<Subject>("subjects", "/api/v1/subjects");
-  const faculty = useList<Faculty>("faculty", "/api/v1/faculty");
-  const assignments = useList<Assignment>("assignments", "/api/v1/assignments");
+  const programmes = useList<Programme>("programmes", "/api/v1/academic/programmes");
+  const years = useList<AcademicYear>("academic-years", "/api/v1/academic/academic-years");
+  const batches = useList<Batch>("batches", "/api/v1/academic/batches");
+  const subjects = useList<Subject>("subjects", "/api/v1/academic/subjects");
+  const faculty = useList<Faculty>("faculty", "/api/v1/academic/faculty");
+  const assignments = useList<Assignment>("assignments", "/api/v1/academic/assignments");
   const all = [programmes, years, batches, subjects, faculty, assignments];
   const failed = all.find((q) => q.isError);
 

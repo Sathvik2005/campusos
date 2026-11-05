@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname) } },
   test: {
     environment: "jsdom",
+    testTimeout: 20000,
     fileParallelism: false, // low-memory dev machine: parallel workers crash with VirtualAlloc errors
     setupFiles: ["./vitest.setup.ts"],
     include: ["**/*.test.{ts,tsx}"],

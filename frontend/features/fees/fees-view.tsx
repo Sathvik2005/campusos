@@ -28,7 +28,7 @@ export function FeesView() {
     queryFn: ({ signal }) => {
       const p = new URLSearchParams({ page: String(page), page_size: String(PAGE_SIZE) });
       if (dq) p.set("q", dq);
-      return apiFetch<FeeAccount[]>(`/api/v1/accounts?${p}`, { signal });
+      return apiFetch<FeeAccount[]>(`/api/v1/fees/accounts?${p}`, { signal });
     },
     placeholderData: (prev) => prev,
   });
@@ -49,7 +49,7 @@ export function FeesView() {
 
       {list.isPending && <Skeleton className="h-40" />}
       {list.isError && <ErrorState title="Couldn't load fee accounts" message={list.error.message} onRetry={() => list.refetch()} />}
-      {list.data && rows.length === 0 && <EmptyState title="No accounts found" body="Try a different search." />}
+      {list.data && rows.length === 0 && <EmptyState mascot={false} title="No accounts found" body="Try a different search." />}
       {rows.length > 0 && (
         <>
           <section aria-label="Reconciliation (this page)" className="grid grid-cols-3 gap-3">
