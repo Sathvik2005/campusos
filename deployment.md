@@ -139,7 +139,18 @@ Follow `docs/PLAYBOOK.md`, scenario "Demo for a reviewer". Short version:
 7. **Insights:** select a flagged student, read the evidence, "Create mentor task", review, Approve.
 8. **Audit:** the actions above appear, read-only.
 
-**Demo credentials:** none are provisioned in this repository or on any deployment. You create the sign-in users in your own Supabase project (part B5).
+### Demo login details for the reviewer
+
+**Status: no demo accounts exist yet.** The sign-in system (Supabase Auth) needs a Supabase project, and none was available when this was written, so there is no live app and no password to publish. Nothing below is a working credential today.
+
+Once the owner has created the Supabase project (part B) and linked the users (part D), these are the accounts to provide here (synthetic only, never real people; set the passwords in the Supabase dashboard and write them in this table before submitting):
+
+| Role | Email (synthetic) | Password | What to try |
+|---|---|---|---|
+| Office Admin | `admin@demo.campusos.example` | *(set in Supabase, then write here)* | Academics, Fees, Marks moderation, Insights, Audit |
+| Faculty 1 | `faculty1@demo.campusos.example` | *(set in Supabase, then write here)* | Attendance (online and offline), Marks entry |
+
+The faculty users link in order to the seeded Demo Faculty 1, 2, 3 (see part D). Demo passwords are not secrets worth protecting (the data is synthetic), but never reuse a real password.
 
 ## J. Troubleshooting
 

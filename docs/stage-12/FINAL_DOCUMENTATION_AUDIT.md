@@ -2,7 +2,7 @@
 
 | Document | Present | Accurate to the code? | Notes |
 |---|---|---|---|
-| `CampusOS_Technical_Design_Document.pdf` (repo root) | Yes, 11 pages, A4 | Yes: figures (152 backend, 89 frontend, 12 e2e tests; 21 tables; 34 FKs) come from commands run; ER diagram is generated from the SQLAlchemy metadata | GitHub URL on page 1; limitations in sections 18 and 19; only signed-out screenshots (no Supabase project) |
+| `CampusOS_Technical_Design_Document.pdf` (repo root) | Yes, 11 pages, A4 | Yes: figures (152 backend, 89 frontend, 12 e2e tests; 21 tables; 34 FKs) come from commands run; ER diagram is generated from the SQLAlchemy metadata | GitHub URL on page 1; limitations in sections 18 and 20, labelled assumptions in section 19; only signed-out screenshots (no Supabase project) |
 | `deployment.md` (repo root) | Yes | Local run (part A) executed; seed `--admin-user-id/--faculty-user-id` options tested; parts B and D to H describe Supabase/Render/Vercel steps that were **not** executed (stated at the top of the file) | No demo credentials are provisioned and none are published |
 | `docs/RUNBOOK.md`, `docs/PLAYBOOK.md` | Yes | Commands match the repo; SQL for linking a profile matches the `profiles` model columns | Scenario results for a live system are unverified |
 | `docs/stage-6` to `stage-12` reports | Yes | Each marks what was and was not tested | |
